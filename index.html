@@ -204,6 +204,23 @@ var modeL={chart:'Chart/Data viz',ui:'UI/Screenshot',doc:'Business document'};
 var accL={high:'Accurate',med:'Partially accurate',low:'Inaccurate','':'Not rated'};
 
 // ===== NETLIFY SYNC =====
+async function netlifyLoad() {
+  setSS('syncing','Loading...');
+  try {
+    var r = await fetch('/api/report');
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    var d = await r.json();
+    clearAll();
+    restoreAll(d);
+    var t = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'});
+    setSS('ok','Synced · '+t);
+    startAutoSync();
+  } catch(e) {
+    setSS('err','Offline — using local data');
+    loadLocal();
+  }
+}
+
 async function netlifyS() {
   var d = collectAll();
   saveLocal(d);
@@ -227,6 +244,7 @@ async function netlifyS() {
     setSS('err','Sync failed — saved locally');
   }
 }
+
 function startAutoSync(){ clearInterval(syncTimer); syncTimer=setInterval(netlifyS,60000); }
 function syncNow(){ setSS('syncing','Syncing...'); netlifyS(); }
 

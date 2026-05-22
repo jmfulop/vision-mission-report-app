@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Vision Mission Report — MYOB</title>
+<style>
+:root{
+  --purple:#7B14EF;--lavender:#C497FE;--mauve:#EBDCFD;
+  --ok:#0D7A4E;--ok-bg:#E6F4EE;--err:#C0392B;--err-bg:#FDECEA;
+  --warn:#92610C;--warn-bg:#FEF3E2;--border:#E4E0F0;--surface:#F8F6FF;
+  --font:Arial,sans-serif;--mono:Consolas,'Courier New',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font);background:var(--surface);color:#000;min-height:100vh;font-size:13px;}
+nav{background:#fff;border-bottom:2px solid var(--mauve);padding:0 28px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;gap:8px;}
+.nav-brand{font-weight:800;font-size:.95rem;white-space:nowrap;}
+.nav-brand .m{color:var(--purple);}
+.nav-pill{background:var(--mauve);color:var(--purple);font-size:.65rem;font-weight:700;padding:3px 9px;border-radius:20px;margin-left:6px;}
+.nav-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.sync-chip{display:flex;align-items:center;gap:5px;font-size:.68rem;font-weight:600;padding:4px 10px;border-radius:20px;white-space:nowrap;}
+.sync-chip.ok{background:var(--ok-bg);color:var(--ok);}
+.sync-chip.syncing{background:var(--mauve);color:var(--purple);}
+.sync-chip.err{background:var(--err-bg);color:var(--err);}
+.sync-chip.idle{background:#F0EEF8;color:#888;}
+.sdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.sdot.ok{background:var(--ok);}
+.sdot.syncing{background:var(--purple);animation:pulse .8s infinite;}
+.sdot.err{background:var(--err);}
+.sdot.idle{background:#ccc;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+.btn{border:1.5px solid var(--purple);background:none;color:var(--purple);font-family:var(--font);font-size:.72rem;font-weight:700;padding:5px 12px;border-radius:7px;cursor:pointer;transition:all .15s;}
+.btn:hover{background:var(--mauve);}
+.btn.primary{background:var(--purple);color:#fff;}
+.btn.primary:hover{background:#5c0ec4;}
+.btn.ghost{border-color:#DDD;color:#999;}
+.btn.ghost:hover{border-color:var(--purple);color:var(--purple);}
+.hero{background:linear-gradient(135deg,#7B14EF 0%,#4A0099 100%);color:#fff;padding:36px 28px 30px;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;top:-50px;right:-50px;width:200px;height:200px;border-radius:50%;background:rgba(196,151,254,.18);}
+.hero-eye{font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;opacity:.8;margin-bottom:8px;}
+.hero h1{font-size:1.5rem;font-weight:800;line-height:1.1;margin-bottom:8px;}
+.hero h1 span{color:var(--lavender);}
+.hero p{opacity:.85;font-size:.86rem;max-width:540px;line-height:1.6;margin-bottom:16px;}
+.hero-meta{display:flex;gap:12px;flex-wrap:wrap;}
+.mf{background:rgba(255,255,255,.12);border-radius:9px;padding:9px 12px;}
+.mf label{opacity:.7;font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:3px;}
+.mf input{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.28);border-radius:5px;color:#fff;font-family:var(--font);font-size:.84rem;font-weight:600;width:155px;outline:none;padding:3px 7px;}
+.mf input::placeholder{color:rgba(255,255,255,.4);}
+.tabs{background:#fff;border-bottom:2px solid var(--mauve);display:flex;padding:0 28px;overflow-x:auto;}
+.tab-btn{background:none;border:none;border-bottom:3px solid transparent;padding:12px 18px;font-family:var(--font);font-size:.82rem;font-weight:600;color:#777;cursor:pointer;white-space:nowrap;transition:all .15s;margin-bottom:-2px;}
+.tab-btn:hover{color:var(--purple);}
+.tab-btn.active{color:var(--purple);border-bottom-color:var(--purple);}
+.badge{background:var(--mauve);color:var(--purple);font-size:.65rem;padding:2px 6px;border-radius:10px;margin-left:4px;font-weight:700;}
+.tab-btn.active .badge{background:var(--purple);color:#fff;}
+.main{max-width:1050px;margin:0 auto;padding:28px 24px 80px;}
+.section{display:none;}
+.section.active{display:block;}
+.section-title{font-size:1.1rem;font-weight:800;color:var(--purple);margin-bottom:4px;}
+.section-sub{font-size:.84rem;color:#555;margin-bottom:20px;line-height:1.55;}
+.vrow{display:flex;align-items:center;gap:8px;margin-bottom:16px;}
+.vrow span{font-size:.76rem;color:#666;}
+.vtbtn{border:1.5px solid var(--border);background:#fff;color:#666;font-family:var(--font);font-size:.74rem;font-weight:600;padding:5px 11px;border-radius:7px;cursor:pointer;transition:all .15s;}
+.vtbtn.active{border-color:var(--purple);background:var(--mauve);color:var(--purple);}
+.entry-card{background:#fff;border:1.5px solid var(--border);border-radius:14px;margin-bottom:16px;overflow:hidden;}
+.entry-hd{background:linear-gradient(135deg,#7B14EF 0%,#4A0099 100%);padding:12px 18px;display:flex;align-items:center;gap:10px;}
+.entry-num{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.22);color:#fff;font-size:.74rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.entry-title-in{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);border-radius:6px;color:#fff;font-family:var(--font);font-size:.88rem;font-weight:700;flex:1;outline:none;padding:4px 9px;}
+.entry-title-in::placeholder{color:rgba(255,255,255,.4);}
+.tool-pill{background:rgba(255,255,255,.2);color:#fff;font-size:.68rem;padding:2px 9px;border-radius:12px;display:none;white-space:nowrap;}
+.rm-btn{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);color:#fff;font-family:var(--font);font-size:.7rem;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;}
+.rm-btn:hover{background:rgba(255,255,255,.28);}
+.entry-body{padding:20px 22px;}
+.entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.fg{margin-bottom:14px;}
+.fl{font-size:.7rem;font-weight:700;color:#333;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;display:block;}
+.fl.ok{color:var(--ok);}.fl.err{color:var(--err);}.fl.warn{color:var(--warn);}
+textarea,input.fi{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:8px 11px;font-family:var(--font);font-size:.82rem;color:#000;outline:none;resize:none;line-height:1.6;transition:border-color .15s;background:#FAFAFA;}
+textarea:focus,input.fi:focus{border-color:var(--purple);background:#fff;}
+.tags-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px;}
+.ttag,.mtag{border:1.5px solid var(--border);background:#fff;color:#555;font-family:var(--font);font-size:.72rem;font-weight:600;padding:5px 11px;border-radius:20px;cursor:pointer;transition:all .15s;}
+.ttag:hover,.mtag:hover{border-color:var(--lavender);color:var(--purple);}
+.ttag.sel,.mtag.sel{border-color:var(--purple);background:var(--mauve);color:var(--purple);}
+.acc-row{display:flex;gap:6px;flex-wrap:wrap;}
+.abtn{border:1.5px solid var(--border);background:#fff;color:#555;font-family:var(--font);font-size:.74rem;font-weight:600;padding:5px 13px;border-radius:7px;cursor:pointer;transition:all .15s;}
+.abtn.hi{border-color:var(--ok);background:var(--ok-bg);color:var(--ok);}
+.abtn.me{border-color:#c98a00;background:var(--warn-bg);color:var(--warn);}
+.abtn.lo{border-color:var(--err);background:var(--err-bg);color:var(--err);}
+.img-zone{border:2px dashed var(--lavender);border-radius:10px;padding:16px;text-align:center;cursor:pointer;transition:all .15s;background:#FAFAFA;min-height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.img-zone:hover{border-color:var(--purple);background:#FAF6FF;}
+.img-zone.has{border-style:solid;border-color:var(--purple);padding:8px;background:#fff;}
+.img-thumb{max-width:100%;max-height:140px;border-radius:6px;display:none;}
+.img-hint{font-size:.74rem;color:#aaa;}
+.img-clear{font-size:.7rem;color:var(--purple);cursor:pointer;text-decoration:underline;display:none;margin-top:6px;}
+.divider{height:1px;background:var(--mauve);margin:16px 0;}
+.gen-banner{background:linear-gradient(135deg,#7B14EF 0%,#4A0099 100%);border-radius:9px;padding:10px 14px;margin-bottom:12px;}
+.gen-banner-title{color:#fff;font-weight:700;font-size:.84rem;margin-bottom:2px;}
+.gen-banner-sub{color:rgba(255,255,255,.7);font-size:.72rem;}
+.add-btn{width:100%;background:none;border:2px dashed var(--lavender);border-radius:12px;padding:14px;font-family:var(--font);font-size:.84rem;font-weight:700;color:var(--purple);cursor:pointer;transition:all .15s;margin-top:4px;}
+.add-btn:hover{background:var(--mauve);border-color:var(--purple);}
+.read-card{background:#fff;border:1.5px solid var(--border);border-radius:14px;margin-bottom:16px;overflow:hidden;}
+.read-hd{background:linear-gradient(135deg,#7B14EF 0%,#4A0099 100%);padding:12px 18px;display:flex;align-items:center;gap:8px;}
+.read-num{width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.22);color:#fff;font-size:.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;}
+.read-title{color:#fff;font-weight:700;font-size:.88rem;flex:1;}
+.rp{background:rgba(255,255,255,.2);color:#fff;font-size:.66rem;padding:2px 8px;border-radius:10px;white-space:nowrap;}
+.read-body{padding:18px 22px;}
+.read-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px;}
+.rl{font-size:.68rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+.rl.ok{color:var(--ok);}.rl.err{color:var(--err);}.rl.warn{color:var(--warn);}
+.rv{font-size:.82rem;color:#222;background:#F7F5FF;border-radius:7px;padding:9px 12px;border-left:2.5px solid var(--lavender);white-space:pre-wrap;line-height:1.6;}
+.rv.full{border-left-color:var(--purple);}
+.rv.ok{border-left-color:var(--ok);}
+.rv.err{border-left-color:var(--err);}
+.rv.warn{border-left-color:var(--warn);}
+.ac{display:inline-flex;align-items:center;border-radius:20px;padding:4px 11px;font-size:.74rem;font-weight:700;}
+.ac.hi{background:var(--ok-bg);color:var(--ok);}
+.ac.me{background:var(--warn-bg);color:var(--warn);}
+.ac.lo{background:var(--err-bg);color:var(--err);}
+.ac.none{background:var(--mauve);color:var(--purple);}
+.lim-card{background:#fff;border:1.5px solid var(--border);border-radius:13px;padding:18px 20px;margin-bottom:14px;}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;}
+.stat-box{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:18px;text-align:center;}
+.stat-num{font-size:2rem;font-weight:800;color:var(--purple);line-height:1;margin-bottom:4px;}
+.stat-lbl{font-size:.72rem;color:#666;font-weight:600;}
+.exp-block{background:#1a0433;color:var(--lavender);font-family:var(--mono);font-size:.74rem;border-radius:10px;padding:16px;white-space:pre-wrap;line-height:1.6;display:none;margin-top:12px;max-height:280px;overflow-y:auto;}
+.callout{background:var(--mauve);border-left:4px solid var(--purple);border-radius:0 10px 10px 0;padding:12px 16px;font-size:.82rem;line-height:1.6;color:#2a0066;margin-bottom:16px;}
+.callout strong{color:var(--purple);}
+@media(max-width:700px){.entry-grid,.read-grid{grid-template-columns:1fr;}.stats-row{grid-template-columns:1fr 1fr;}.hero h1{font-size:1.2rem;}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand"><span class="m">MYOB</span> Vision Mission Report<span class="nav-pill">Week 5</span></div>
+  <div class="nav-actions">
+    <div class="sync-chip idle" id="sync-chip"><span class="sdot idle" id="sync-dot"></span><span id="sync-txt">Connecting...</span></div>
+    <button class="btn" onclick="syncNow()">☁ Sync</button>
+    <button class="btn ghost" onclick="document.getElementById('json-load-inp').click()" title="Load from saved JSON file">📂 Load JSON</button>
+    <button class="btn" onclick="switchTab('summary');buildSummary()">📊 Summary</button>
+    <button class="btn primary" onclick="doExport()">📤 Export</button>
+  </div>
+  <input type="file" id="json-load-inp" accept=".json" style="display:none" onchange="loadFromJSON(event)" />
+</nav>
+
+<div class="hero">
+  <div class="hero-eye">AI Vision Mission — Learning Log</div>
+  <h1>Mission report: <span>AI vision tool testing</span></h1>
+  <p>Log your findings as you test different AI vision tools. Data saves automatically and syncs for the whole team — open this URL on any device to see the latest.</p>
+  <div class="hero-meta">
+    <div class="mf"><label>Your name</label><input type="text" id="meta-name" placeholder="Jean" oninput="qs()" /></div>
+    <div class="mf"><label>Mission period</label><input type="text" id="meta-period" placeholder="May 2026" oninput="qs()" /></div>
+    <div class="mf"><label>Tools tested</label><input type="text" id="meta-focus" placeholder="Claude, GPT-4o, Google Lens" oninput="qs()" /></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('tests')" id="tab-tests">Test log <span class="badge" id="tc">0</span></button>
+  <button class="tab-btn" onclick="switchTab('limitations')" id="tab-lims">Limitations</button>
+  <button class="tab-btn" onclick="switchTab('summary')" id="tab-sum">Summary</button>
+</div>
+
+<div class="main">
+
+  <div class="section active" id="section-tests">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:6px;">
+      <div><div class="section-title">Test log</div><div class="section-sub">Add an entry for each image you analyse. Switch to Read view to review clearly.</div></div>
+      <div class="vrow"><span>View:</span>
+        <button class="vtbtn active" id="vb-e" onclick="setView('edit')">✏️ Edit</button>
+        <button class="vtbtn" id="vb-r" onclick="setView('read')">👁 Read</button>
+      </div>
+    </div>
+    <div id="entries-edit"></div>
+    <div id="entries-read" style="display:none;"></div>
+    <button class="add-btn" id="add-btn" onclick="addEntry()">+ Add test entry</button>
+  </div>
+
+  <div class="section" id="section-limitations">
+    <div class="section-title">Limitations per tool</div>
+    <div class="section-sub">Document patterns and failure modes organised by tool.</div>
+    <div id="lim-cards"></div>
+    <button class="add-btn" onclick="addLimCard()">+ Add tool limitations card</button>
+  </div>
+
+  <div class="section" id="section-summary">
+    <div class="section-title">Mission summary</div>
+    <div class="section-sub">Generated from your test log and limitations notes.</div>
+    <div class="stats-row">
+      <div class="stat-box"><div class="stat-num" id="s0">0</div><div class="stat-lbl">Tests logged</div></div>
+      <div class="stat-box"><div class="stat-num" id="s1" style="color:var(--ok)">0</div><div class="stat-lbl">Accurate</div></div>
+      <div class="stat-box"><div class="stat-num" id="s2" style="color:var(--warn)">0</div><div class="stat-lbl">Partially accurate</div></div>
+      <div class="stat-box"><div class="stat-num" id="s3" style="color:var(--err)">0</div><div class="stat-lbl">Inaccurate</div></div>
+    </div>
+    <div id="sum-content"></div>
+    <div id="exp-wrap" style="display:none;margin-top:14px;">
+      <button class="btn primary" onclick="showExport()">📋 Copy as text</button>
+      <div class="exp-block" id="exp-block"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+var entries=[], limCards=[], ec=0, lc=0, saveTimer=null, syncTimer=null;
+var modeL={chart:'Chart/Data viz',ui:'UI/Screenshot',doc:'Business document'};
+var accL={high:'Accurate',med:'Partially accurate',low:'Inaccurate','':'Not rated'};
+
+// ===== NETLIFY SYNC =====
+async function netlifyLoad() {
+  setSS('syncing','Loading...');
+  try {
+    var r = await fetch('/api/report');
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    var d = await r.json();
+    clearAll();
+    restoreAll(d);
+    var t = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'});
+    setSS('ok','Synced · '+t);
+    startAutoSync();
+  } catch(e) {
+    setSS('err','Offline — using local data');
+    loadLocal();
+  }
+}
+
+async function netlifyS() {
+  var d = collectAll();
+  saveLocal(d);
+  var syncData = JSON.parse(JSON.stringify(d));
+  syncData.entries = syncData.entries.map(function(e) {
+    var clean = Object.assign({}, e);
+    delete clean.thumbSrc;
+    delete clean.genThumbSrc;
+    return clean;
+  });
+  try {
+    var r = await fetch('/api/report',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(syncData)
+    });
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    var t = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'});
+    setSS('ok','Synced · '+t);
+  } catch(e) {
+    setSS('err','Sync failed — saved locally');
+  }
+}
+
+function startAutoSync(){ clearInterval(syncTimer); syncTimer=setInterval(netlifyS,60000); }
+function syncNow(){ setSS('syncing','Syncing...'); netlifyS(); }
+
+function qs(){
+  saveLocal(collectAll());
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(netlifyS,2500);
+}
+
+function saveLocal(d){ try{localStorage.setItem('vmr-netlify-v1',JSON.stringify(d));}catch(e){} }
+function loadLocal(){
+  try{
+    var d=localStorage.getItem('vmr-netlify-v1');
+    if(d){restoreAll(JSON.parse(d));setSS('idle','Local data');}
+    else setSS('idle','Ready — no data yet');
+  }catch(e){setSS('idle','Ready');}
+}
+
+function setSS(state,msg){
+  var c=document.getElementById('sync-chip');
+  var d=document.getElementById('sync-dot');
+  var t=document.getElementById('sync-txt');
+  c.className='sync-chip '+state;
+  d.className='sdot '+state;
+  t.textContent=msg;
+}
+
+// ===== JSON LOAD =====
+function loadFromJSON(event){
+  var file=event.target.files[0];
+  if(!file) return;
+  var r=new FileReader();
+  r.onload=function(e){
+    try{
+      var d=JSON.parse(e.target.result);
+      if(!d.entries) throw new Error('Invalid');
+      if(entries.length>0){
+        if(!confirm('Load JSON file? This will replace your current '+entries.length+' entries.')) return;
+      }
+      clearAll();
+      restoreAll(d);
+      setSS('syncing','Saving loaded data...');
+      netlifyS();
+      document.getElementById('json-load-inp').value='';
+    }catch(err){alert('Could not read this file. Make sure it is a vision mission report JSON.');}
+  };
+  r.readAsText(file);
+}
+
+// ===== DATA =====
+function collectAll(){
+  var d={version:1,savedAt:new Date().toISOString(),
+    meta:{name:gv('meta-name'),period:gv('meta-period'),focus:gv('meta-focus')},
+    entries:[],limCards:[]};
+  entries.forEach(function(id){
+    var e={id:id,title:gv(id+'-title'),desc:gv(id+'-desc'),tool:gv(id+'-tool'),
+      mode:gv(id+'-mode'),output:gv(id+'-output'),strengths:gv(id+'-strengths'),
+      weaknesses:gv(id+'-weaknesses'),errors:gv(id+'-errors'),
+      accVal:gv(id+'-acc-val'),notes:gv(id+'-notes'),
+      prompt:gv(id+'-prompt'),comparison:gv(id+'-comparison')};
+    var th=document.getElementById(id+'-thumb');
+    if(th&&th.src&&th.style.display!=='none') e.thumbSrc=th.src;
+    var gth=document.getElementById(id+'-gen-thumb');
+    if(gth&&gth.src&&gth.style.display!=='none') e.genThumbSrc=gth.src;
+    d.entries.push(e);
+  });
+  limCards.forEach(function(lid){
+    d.limCards.push({id:lid,name:gv(lid+'-name'),strengths:gv(lid+'-strengths'),
+      weaknesses:gv(lid+'-weaknesses'),general:gv(lid+'-general')});
+  });
+  return d;
+}
+
+function clearAll(){
+  entries.forEach(function(id){var el=document.getElementById(id);if(el)el.remove();});
+  entries=[];ec=0;
+  limCards.forEach(function(lid){var el=document.getElementById(lid);if(el)el.remove();});
+  limCards=[];lc=0;uc();
+}
+
+function restoreAll(d){
+  if(d.meta){sv('meta-name',d.meta.name);sv('meta-period',d.meta.period);sv('meta-focus',d.meta.focus);}
+  (d.entries||[]).forEach(function(e){addEntry(e);});
+  (d.limCards||[]).forEach(function(l){addLimCard(l);});
+  uc();
+}
+
+function gv(id){var el=document.getElementById(id);return el?el.value:'';}
+function sv(id,v){var el=document.getElementById(id);if(el&&v!=null)el.value=v;}
+function uc(){document.getElementById('tc').textContent=entries.length;}
+
+// ===== TABS =====
+function switchTab(n){
+  document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('section-'+n).classList.add('active');
+  var tb=document.getElementById('tab-'+n)||document.getElementById('tab-'+{tests:'tests',limitations:'lims',summary:'sum'}[n]);
+  if(tb)tb.classList.add('active');
+}
+
+function setView(v){
+  document.getElementById('vb-e').classList.toggle('active',v==='edit');
+  document.getElementById('vb-r').classList.toggle('active',v==='read');
+  document.getElementById('entries-edit').style.display=v==='edit'?'block':'none';
+  document.getElementById('entries-read').style.display=v==='read'?'block':'none';
+  document.getElementById('add-btn').style.display=v==='edit'?'block':'none';
+  if(v==='read') buildReadView();
+}
+
+// ===== ENTRIES =====
+function addEntry(data){
+  ec++;var id='e'+ec;entries.push(id);
+  var div=document.createElement('div');div.className='entry-card';div.id=id;
+  div.innerHTML=
+    '<div class="entry-hd">'+
+      '<div class="entry-num">'+ec+'</div>'+
+      '<input class="entry-title-in" id="'+id+'-title" placeholder="Entry title e.g. PowerBI dashboard" oninput="qs()" />'+
+      '<span class="tool-pill" id="'+id+'-tool-pill"></span>'+
+      '<button class="rm-btn" onclick="removeEntry(\''+id+'\')">Remove</button>'+
+    '</div>'+
+    '<div class="entry-body">'+
+      '<div class="entry-grid">'+
+        '<div class="fg"><label class="fl">Image description</label>'+
+          '<textarea id="'+id+'-desc" rows="2" placeholder="What image did you test?" oninput="ar(this);qs()"></textarea></div>'+
+        '<div class="fg"><label class="fl">Image (optional)</label>'+
+          '<div class="img-zone" id="'+id+'-zone" onclick="trigImg(\''+id+'\')" >'+
+            '<div class="img-hint" id="'+id+'-hint">📎 Click to attach image</div>'+
+            '<img class="img-thumb" id="'+id+'-thumb" />'+
+            '<div class="img-clear" id="'+id+'-clear" onclick="clearImg(event,\''+id+'\')">✕ Remove image</div>'+
+          '</div>'+
+          '<input type="file" id="'+id+'-file" accept="image/*" style="display:none" onchange="loadImg(event,\''+id+'\')" />'+
+        '</div>'+
+      '</div>'+
+      '<div class="entry-grid" style="margin-bottom:14px;">'+
+        '<div class="fg"><label class="fl">Tool used</label>'+
+          '<div class="tags-row">'+
+            '<button class="ttag" onclick="selTool(this,\''+id+'\',\'Claude\')">🤖 Claude</button>'+
+            '<button class="ttag" onclick="selTool(this,\''+id+'\',\'GPT-4o\')">💬 GPT-4o</button>'+
+            '<button class="ttag" onclick="selTool(this,\''+id+'\',\'Google Lens\')">🔍 Google Lens</button>'+
+            '<button class="ttag" onclick="selTool(this,\''+id+'\',\'DALL-E 3\')">🎨 DALL-E 3</button>'+
+          '</div>'+
+          '<input type="hidden" id="'+id+'-tool" /></div>'+
+        '<div class="fg"><label class="fl">Analysis mode</label>'+
+          '<div class="tags-row">'+
+            '<button class="mtag" onclick="selMode(this,\''+id+'\',\'chart\')">📊 Chart/Data viz</button>'+
+            '<button class="mtag" onclick="selMode(this,\''+id+'\',\'ui\')">🖥️ UI/Screenshot</button>'+
+            '<button class="mtag" onclick="selMode(this,\''+id+'\',\'doc\')">📄 Business document</button>'+
+          '</div>'+
+          '<input type="hidden" id="'+id+'-mode" /></div>'+
+      '</div>'+
+      '<div class="fg"><label class="fl">What the tool returned (key points)</label>'+
+        '<textarea id="'+id+'-output" rows="3" placeholder="Summarise the key findings returned..." oninput="ar(this);qs()"></textarea></div>'+
+      '<div class="entry-grid">'+
+        '<div class="fg"><label class="fl ok">✓ Strengths</label>'+
+          '<textarea id="'+id+'-strengths" rows="2" placeholder="What did the tool do well?" oninput="ar(this);qs()"></textarea></div>'+
+        '<div class="fg"><label class="fl err">✗ Weaknesses</label>'+
+          '<textarea id="'+id+'-weaknesses" rows="2" placeholder="Known limitations?" oninput="ar(this);qs()"></textarea></div>'+
+      '</div>'+
+      '<div class="fg"><label class="fl warn">⚠ Errors or surprises (this test)</label>'+
+        '<textarea id="'+id+'-errors" rows="2" placeholder="What was unexpected in this specific test?" oninput="ar(this);qs()"></textarea></div>'+
+      '<div class="entry-grid">'+
+        '<div class="fg"><label class="fl">Accuracy rating</label>'+
+          '<div class="acc-row" id="'+id+'-acc">'+
+            '<button class="abtn" onclick="selAcc(\''+id+'\',this,\'high\')">✓ Accurate</button>'+
+            '<button class="abtn" onclick="selAcc(\''+id+'\',this,\'med\')">~ Partial</button>'+
+            '<button class="abtn" onclick="selAcc(\''+id+'\',this,\'low\')">✗ Inaccurate</button>'+
+          '</div>'+
+          '<input type="hidden" id="'+id+'-acc-val" /></div>'+
+        '<div class="fg"><label class="fl">Notes for report</label>'+
+          '<textarea id="'+id+'-notes" rows="2" placeholder="Key takeaway for writeup..." oninput="ar(this);qs()"></textarea></div>'+
+      '</div>'+
+      '<div class="divider"></div>'+
+      '<div class="gen-banner">'+
+        '<div class="gen-banner-title">✨ Image generation — full loop</div>'+
+        '<div class="gen-banner-sub">Paste DALL-E 3 prompt from Claude into ChatGPT, generate, then compare</div>'+
+      '</div>'+
+      '<div class="fg"><label class="fl">🎨 DALL-E 3 prompt (from Claude)</label>'+
+        '<textarea id="'+id+'-prompt" rows="3" placeholder="Paste the DALL-E 3 prompt here..." oninput="ar(this);qs()"></textarea></div>'+
+      '<div class="entry-grid">'+
+        '<div class="fg"><label class="fl">Original image</label>'+
+          '<div style="background:#F7F5FF;border-radius:8px;padding:8px;min-height:100px;display:flex;align-items:center;justify-content:center;">'+
+            '<img id="'+id+'-orig-prev" style="max-width:100%;max-height:130px;border-radius:6px;display:none;" />'+
+            '<div id="'+id+'-orig-hint" style="font-size:.72rem;color:#aaa;text-align:center;">Attaches when you<br>upload image above</div>'+
+          '</div></div>'+
+        '<div class="fg"><label class="fl">Generated image (DALL-E 3 output)</label>'+
+          '<div class="img-zone" id="'+id+'-gen-zone" onclick="trigGenImg(\''+id+'\')" style="min-height:100px;">'+
+            '<div class="img-hint" id="'+id+'-gen-hint">🎨 Click to attach DALL-E 3 output</div>'+
+            '<img class="img-thumb" id="'+id+'-gen-thumb" />'+
+            '<div class="img-clear" id="'+id+'-gen-clear" onclick="clearGenImg(event,\''+id+'\')">✕ Remove</div>'+
+          '</div>'+
+          '<input type="file" id="'+id+'-gen-file" accept="image/*" style="display:none" onchange="loadGenImg(event,\''+id+'\')" /></div>'+
+      '</div>'+
+      '<div class="fg"><label class="fl">🔁 Comparison — original vs generated</label>'+
+        '<textarea id="'+id+'-comparison" rows="2" placeholder="How well did DALL-E interpret the prompt? What was captured, lost, or surprising?" oninput="ar(this);qs()"></textarea></div>'+
+    '</div>';
+  document.getElementById('entries-edit').appendChild(div);
+  if(data) restoreEntry(id,data);
+  uc();
+  if(!data) div.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function restoreEntry(id,d){
+  sv(id+'-title',d.title);sv(id+'-desc',d.desc);sv(id+'-output',d.output);
+  sv(id+'-strengths',d.strengths);sv(id+'-weaknesses',d.weaknesses);
+  sv(id+'-errors',d.errors);sv(id+'-notes',d.notes);
+  sv(id+'-prompt',d.prompt);sv(id+'-comparison',d.comparison);
+  if(d.tool){
+    sv(id+'-tool',d.tool);
+    var pill=document.getElementById(id+'-tool-pill');
+    if(pill){pill.textContent=d.tool;pill.style.display='inline-block';}
+    document.querySelectorAll('#'+id+' .ttag').forEach(function(b){
+      if(b.textContent.trim().replace(/^.\s/,'')===d.tool||b.textContent.trim()===d.tool)b.classList.add('sel');
+    });
+  }
+  if(d.mode){
+    sv(id+'-mode',d.mode);
+    document.querySelectorAll('#'+id+' .mtag').forEach(function(b){
+      if((b.getAttribute('onclick')||'').indexOf("'"+d.mode+"'")!==-1)b.classList.add('sel');
+    });
+  }
+  if(d.accVal){
+    sv(id+'-acc-val',d.accVal);
+    var cls=d.accVal==='high'?'hi':d.accVal==='med'?'me':'lo';
+    document.getElementById(id+'-acc').querySelectorAll('.abtn').forEach(function(b){
+      if((b.getAttribute('onclick')||'').indexOf("'"+d.accVal+"'")!==-1)b.classList.add(cls);
+    });
+  }
+  if(d.thumbSrc) setThumb(id,d.thumbSrc);
+  if(d.genThumbSrc) setGenThumb(id,d.genThumbSrc);
+  document.querySelectorAll('#'+id+' textarea').forEach(ar);
+}
+
+function setThumb(id,src){
+  var th=document.getElementById(id+'-thumb');
+  var hi=document.getElementById(id+'-hint');
+  var cl=document.getElementById(id+'-clear');
+  var zo=document.getElementById(id+'-zone');
+  var op=document.getElementById(id+'-orig-prev');
+  var oh=document.getElementById(id+'-orig-hint');
+  if(th){th.src=src;th.style.display='block';}
+  if(hi)hi.style.display='none';
+  if(cl)cl.style.display='block';
+  if(zo){zo.classList.add('has');zo.style.cursor='default';zo.onclick=null;}
+  if(op){op.src=src;op.style.display='block';}
+  if(oh)oh.style.display='none';
+}
+
+function setGenThumb(id,src){
+  var th=document.getElementById(id+'-gen-thumb');
+  var hi=document.getElementById(id+'-gen-hint');
+  var cl=document.getElementById(id+'-gen-clear');
+  var zo=document.getElementById(id+'-gen-zone');
+  if(th){th.src=src;th.style.display='block';}
+  if(hi)hi.style.display='none';
+  if(cl)cl.style.display='block';
+  if(zo){zo.classList.add('has');zo.style.cursor='default';zo.onclick=null;}
+}
+
+function removeEntry(id){
+  var el=document.getElementById(id);if(el)el.remove();
+  entries=entries.filter(function(e){return e!==id;});uc();qs();
+}
+function selTool(btn,id,tool){
+  btn.closest('.tags-row').querySelectorAll('.ttag').forEach(function(b){b.classList.remove('sel');});
+  btn.classList.add('sel');sv(id+'-tool',tool);
+  var pill=document.getElementById(id+'-tool-pill');
+  if(pill){pill.textContent=tool;pill.style.display='inline-block';}
+  qs();
+}
+function selMode(btn,id,mode){
+  btn.closest('.tags-row').querySelectorAll('.mtag').forEach(function(b){b.classList.remove('sel');});
+  btn.classList.add('sel');sv(id+'-mode',mode);qs();
+}
+function selAcc(id,btn,val){
+  document.getElementById(id+'-acc').querySelectorAll('.abtn').forEach(function(b){b.classList.remove('hi','me','lo');});
+  btn.classList.add(val==='high'?'hi':val==='med'?'me':'lo');
+  sv(id+'-acc-val',val);qs();
+}
+function ar(el){el.style.height='auto';el.style.height=(el.scrollHeight+2)+'px';}
+function trigImg(id){document.getElementById(id+'-file').click();}
+function trigGenImg(id){document.getElementById(id+'-gen-file').click();}
+function loadImg(event,id){
+  var f=event.target.files[0];if(!f)return;
+  var r=new FileReader();
+  r.onload=function(e){setThumb(id,e.target.result);qs();};
+  r.readAsDataURL(f);
+}
+function loadGenImg(event,id){
+  var f=event.target.files[0];if(!f)return;
+  var r=new FileReader();
+  r.onload=function(e){setGenThumb(id,e.target.result);qs();};
+  r.readAsDataURL(f);
+}
+function clearImg(event,id){
+  event.stopPropagation();
+  var th=document.getElementById(id+'-thumb');if(th){th.src='';th.style.display='none';}
+  var hi=document.getElementById(id+'-hint');if(hi)hi.style.display='block';
+  var cl=document.getElementById(id+'-clear');if(cl)cl.style.display='none';
+  var zo=document.getElementById(id+'-zone');
+  if(zo){zo.classList.remove('has');zo.style.cursor='pointer';zo.onclick=function(){trigImg(id);};}
+  var op=document.getElementById(id+'-orig-prev');if(op){op.src='';op.style.display='none';}
+  var oh=document.getElementById(id+'-orig-hint');if(oh)oh.style.display='block';
+  document.getElementById(id+'-file').value='';qs();
+}
+function clearGenImg(event,id){
+  event.stopPropagation();
+  var th=document.getElementById(id+'-gen-thumb');if(th){th.src='';th.style.display='none';}
+  var hi=document.getElementById(id+'-gen-hint');if(hi)hi.style.display='block';
+  var cl=document.getElementById(id+'-gen-clear');if(cl)cl.style.display='none';
+  var zo=document.getElementById(id+'-gen-zone');
+  if(zo){zo.classList.remove('has');zo.style.cursor='pointer';zo.onclick=function(){trigGenImg(id);};}
+  document.getElementById(id+'-gen-file').value='';qs();
+}
+
+// ===== LIMITATIONS =====
+function addLimCard(data){
+  lc++;var lid='l'+lc;limCards.push(lid);
+  var div=document.createElement('div');div.className='lim-card';div.id=lid;
+  div.innerHTML=
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">'+
+      '<input type="text" class="fi" id="'+lid+'-name" placeholder="Tool name e.g. Claude, GPT-4o" oninput="qs()" style="font-weight:700;font-size:.88rem;flex:1;margin-right:8px;" />'+
+      '<button class="rm-btn" style="background:#F5F3FF;border-color:var(--border);color:#666;" onclick="removeLimCard(\''+lid+'\')">Remove</button>'+
+    '</div>'+
+    '<div class="entry-grid">'+
+      '<div class="fg"><label class="fl ok">✓ Strengths</label>'+
+        '<textarea id="'+lid+'-strengths" rows="3" placeholder="What does this tool do well?" oninput="ar(this);qs()"></textarea></div>'+
+      '<div class="fg"><label class="fl err">✗ Weaknesses</label>'+
+        '<textarea id="'+lid+'-weaknesses" rows="3" placeholder="Known limitations?" oninput="ar(this);qs()"></textarea></div>'+
+    '</div>'+
+    '<div class="fg"><label class="fl">General observations</label>'+
+      '<textarea id="'+lid+'-general" rows="2" placeholder="Any other patterns noticed..." oninput="ar(this);qs()"></textarea></div>';
+  document.getElementById('lim-cards').appendChild(div);
+  if(data){sv(lid+'-name',data.name);sv(lid+'-strengths',data.strengths);sv(lid+'-weaknesses',data.weaknesses);sv(lid+'-general',data.general);div.querySelectorAll('textarea').forEach(ar);}
+}
+function removeLimCard(lid){
+  var el=document.getElementById(lid);if(el)el.remove();
+  limCards=limCards.filter(function(l){return l!==lid;});qs();
+}
+
+// ===== READ VIEW =====
+function buildReadView(){
+  var c=document.getElementById('entries-read');c.innerHTML='';
+  if(!entries.length){c.innerHTML='<div class="callout">No entries yet. Switch to Edit view to add test entries.</div>';return;}
+  entries.forEach(function(id,i){
+    var tool=gv(id+'-tool'),mode=gv(id+'-mode');
+    var accV=gv(id+'-acc-val'),accT=accL[accV]||'Not rated';
+    var cls=accV==='high'?'hi':accV==='med'?'me':accV==='low'?'lo':'none';
+    var hasGen=gv(id+'-prompt')||gv(id+'-comparison');
+    var th=document.getElementById(id+'-thumb');var thSrc=th&&th.src&&th.style.display!=='none'?th.src:'';
+    var gt=document.getElementById(id+'-gen-thumb');var gtSrc=gt&&gt.src&&gt.style.display!=='none'?gt.src:'';
+    c.innerHTML+=
+      '<div class="read-card">'+
+        '<div class="read-hd">'+
+          '<div class="read-num">'+(i+1)+'</div>'+
+          '<div class="read-title">'+eh(gv(id+'-title')||'Entry '+(i+1))+'</div>'+
+          (tool?'<span class="rp">'+eh(tool)+'</span>':'')+
+          (mode?'<span class="rp" style="margin-left:4px;">'+eh(modeL[mode]||mode)+'</span>':'')+
+        '</div>'+
+        '<div class="read-body">'+
+          (gv(id+'-desc')||thSrc?
+            '<div class="read-grid" style="margin-bottom:12px;">'+
+              '<div><div class="rl">Image description</div><div class="rv">'+eh(gv(id+'-desc')||'—')+'</div></div>'+
+              (thSrc?'<div><div class="rl">Image</div><img src="'+thSrc+'" style="max-width:100%;max-height:150px;border-radius:7px;margin-top:4px;" /></div>':'<div></div>')+
+            '</div>'
+          :'')+
+          '<div class="read-grid">'+
+            '<div><div class="rl">What the tool returned</div><div class="rv full">'+eh(gv(id+'-output')||'—')+'</div></div>'+
+            '<div>'+
+              '<div class="rl ok">Strengths</div><div class="rv ok" style="margin-bottom:8px;">'+eh(gv(id+'-strengths')||'—')+'</div>'+
+              '<div class="rl err">Weaknesses</div><div class="rv err">'+eh(gv(id+'-weaknesses')||'—')+'</div>'+
+            '</div>'+
+          '</div>'+
+          '<div class="read-grid" style="margin-top:12px;">'+
+            '<div><div class="rl warn">Errors or surprises</div><div class="rv warn">'+eh(gv(id+'-errors')||'—')+'</div></div>'+
+            '<div>'+
+              '<div class="rl">Accuracy</div><span class="ac '+cls+'" style="margin-top:4px;display:inline-flex;">'+accT+'</span>'+
+              (gv(id+'-notes')?'<div class="rl" style="margin-top:8px;">Notes</div><div class="rv">'+eh(gv(id+'-notes'))+'</div>':'')+
+            '</div>'+
+          '</div>'+
+          (hasGen?
+            '<div style="background:linear-gradient(135deg,#7B14EF,#4A0099);border-radius:8px;padding:9px 13px;margin-top:14px;margin-bottom:10px;">'+
+              '<div style="color:#fff;font-weight:700;font-size:.82rem;">✨ Image generation loop</div></div>'+
+            (gv(id+'-prompt')?'<div class="rl">DALL-E 3 prompt</div><div class="rv full" style="font-family:var(--mono);font-size:.76rem;margin-bottom:8px;">'+eh(gv(id+'-prompt'))+'</div>':'')+
+            (thSrc||gtSrc?
+              '<div class="read-grid" style="margin-bottom:8px;">'+
+                (thSrc?'<div><div class="rl">Original</div><img src="'+thSrc+'" style="max-width:100%;max-height:150px;border-radius:7px;margin-top:4px;" /></div>':'<div></div>')+
+                (gtSrc?'<div><div class="rl">Generated (DALL-E 3)</div><img src="'+gtSrc+'" style="max-width:100%;max-height:150px;border-radius:7px;margin-top:4px;" /></div>':'<div><div class="rl">Generated (DALL-E 3)</div><div class="rv" style="color:#aaa;font-size:.76rem;">Not yet attached</div></div>')+
+              '</div>'
+            :'')+
+            (gv(id+'-comparison')?'<div class="rl">Comparison</div><div class="rv">'+eh(gv(id+'-comparison'))+'</div>':'')
+          :'')+
+        '</div>'+
+      '</div>';
+  });
+}
+
+// ===== SUMMARY =====
+function buildSummary(){
+  var tot=entries.length,hi=0,me=0,lo=0;
+  entries.forEach(function(id){var v=gv(id+'-acc-val');if(v==='high')hi++;else if(v==='med')me++;else if(v==='low')lo++;});
+  document.getElementById('s0').textContent=tot;
+  document.getElementById('s1').textContent=hi;
+  document.getElementById('s2').textContent=me;
+  document.getElementById('s3').textContent=lo;
+  var html='';
+  if(tot>0){
+    html+='<div style="background:#fff;border:1.5px solid var(--border);border-radius:13px;padding:16px 18px;margin-bottom:14px;">'+
+      '<div style="font-size:.88rem;font-weight:700;margin-bottom:12px;">Test findings</div>';
+    entries.forEach(function(id,i){
+      var tool=gv(id+'-tool'),acc=gv(id+'-acc-val'),notes=gv(id+'-notes');
+      var cls=acc==='high'?'hi':acc==='med'?'me':acc==='low'?'lo':'none';
+      html+='<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #F5F3FB;">'+
+        '<span class="ac '+cls+'" style="flex-shrink:0;font-size:.7rem;">'+(accL[acc]||'Not rated')+'</span>'+
+        '<div><div style="font-size:.84rem;font-weight:600;">'+eh(gv(id+'-title')||'Entry '+(i+1))+'</div>'+
+        (tool?'<div style="font-size:.74rem;color:#888;">'+eh(tool)+'</div>':'')+
+        (notes?'<div style="font-size:.78rem;color:#555;margin-top:2px;">'+eh(notes)+'</div>':'')+
+        '</div></div>';
+    });
+    html+='</div>';
+  }
+  if(limCards.length>0){
+    html+='<div style="background:#fff;border:1.5px solid var(--border);border-radius:13px;padding:16px 18px;margin-bottom:14px;">'+
+      '<div style="font-size:.88rem;font-weight:700;margin-bottom:12px;">Limitations per tool</div>';
+    limCards.forEach(function(lid){
+      var name=gv(lid+'-name')||'Unnamed tool';
+      var s=gv(lid+'-strengths'),w=gv(lid+'-weaknesses'),g=gv(lid+'-general');
+      if(!s&&!w&&!g) return;
+      html+='<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #F5F3FB;">'+
+        '<div style="font-size:.84rem;font-weight:700;color:var(--purple);margin-bottom:7px;">'+eh(name)+'</div>';
+      if(s) html+='<div style="font-size:.7rem;font-weight:700;color:var(--ok);text-transform:uppercase;margin-bottom:3px;">Strengths</div><div style="font-size:.8rem;margin-bottom:6px;">'+eh(s)+'</div>';
+      if(w) html+='<div style="font-size:.7rem;font-weight:700;color:var(--err);text-transform:uppercase;margin-bottom:3px;">Weaknesses</div><div style="font-size:.8rem;margin-bottom:6px;">'+eh(w)+'</div>';
+      if(g) html+='<div style="font-size:.7rem;font-weight:700;color:#888;text-transform:uppercase;margin-bottom:3px;">General</div><div style="font-size:.8rem;">'+eh(g)+'</div>';
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+  if(!html) html='<div class="callout">Add test entries and limitations cards, then come back here for your summary.</div>';
+  document.getElementById('sum-content').innerHTML=html;
+  document.getElementById('exp-wrap').style.display=tot>0?'block':'none';
+}
+
+function showExport(){
+  var name=gv('meta-name')||'Jean',period=gv('meta-period')||'May 2026';
+  var lines=['AI VISION MISSION REPORT','By: '+name+' | '+period,''];
+  entries.forEach(function(id,i){
+    var title=gv(id+'-title')||'Entry '+(i+1);
+    lines.push('--- TEST '+(i+1)+': '+title+' ---');
+    var tool=gv(id+'-tool'),mode=gv(id+'-mode'),output=gv(id+'-output');
+    var s=gv(id+'-strengths'),w=gv(id+'-weaknesses'),e=gv(id+'-errors');
+    var acc=gv(id+'-acc-val'),notes=gv(id+'-notes');
+    var pr=gv(id+'-prompt'),co=gv(id+'-comparison');
+    if(tool) lines.push('Tool: '+tool);
+    if(mode) lines.push('Mode: '+(modeL[mode]||mode));
+    if(output) lines.push('Returned:\n'+output);
+    if(s) lines.push('Strengths: '+s);
+    if(w) lines.push('Weaknesses: '+w);
+    if(e) lines.push('Errors: '+e);
+    if(acc) lines.push('Accuracy: '+(accL[acc]||acc));
+    if(notes) lines.push('Notes: '+notes);
+    if(pr) lines.push('DALL-E 3 prompt: '+pr);
+    if(co) lines.push('Comparison: '+co);
+    lines.push('');
+  });
+  var text=lines.join('\n');
+  document.getElementById('exp-block').textContent=text;
+  document.getElementById('exp-block').style.display='block';
+  navigator.clipboard.writeText(text).then(function(){
+    var btn=document.querySelector('#exp-wrap .btn');
+    btn.textContent='✓ Copied!';
+    setTimeout(function(){btn.textContent='📋 Copy as text';},2500);
+  });
+}
+
+function doExport(){switchTab('summary');buildSummary();showExport();}
+function eh(t){return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+netlifyLoad();
+</script>
+</body>
+</html>
